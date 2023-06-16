@@ -1,3 +1,2 @@
-game.Players.LocalPlayer:kick("Patched, Skywars Updated New Anti Cheat. Maybe later I'll fix it
-")
+game.Players.LocalPlayer:kick("Patched, Skywars Updated New Anti Cheat. Maybe later I'll fix it")
 setclipboard("https://discord.gg/SuZYt36ybG")
