@@ -1,4 +1,4 @@
-local _G.Mode
+local Mode = _G.Mode
 if _G.Mode == "Normal" then
     local PlaceId = game.PlaceId
 
