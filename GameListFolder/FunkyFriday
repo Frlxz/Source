@@ -9,6 +9,7 @@ local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/rel
 
 local Window = WindUI:CreateWindow({
     Title = "Nadir Hub │ " .. GameName,
+    Folder = "Nadir Hub"
     Icon = "circle-user-round",
     Author = PlayerName,
     Size = UDim2.fromOffset(100, 100),
