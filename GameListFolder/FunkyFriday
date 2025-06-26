@@ -1,156 +1,387 @@
+--====================================================================================================================--
+--[ WindUI Library & Services ]
+--[ Open Source ]
+--====================================================================================================================--
+local Version = "1.6.3"
+local WindUI =
+    loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/download/" .. Version .. "/main.lua"))()
+
 local Players = game:GetService("Players")
+local TeleportService = game:GetService("TeleportService")
+local HttpService = game:GetService("HttpService")
 local VirtualInputManager = game:GetService("VirtualInputManager")
-local player = Players.LocalPlayer
+local RunService = game:GetService("RunService")
+local GuiService = game:GetService("GuiService")
+local VirtualUser = game:GetService("VirtualUser")
+
+local LocalPlayer = Players.LocalPlayer
 local GameName = game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name
-local PlayerName = player.DisplayName
 
-local Version = "1.6.2"
-local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/download/" .. Version .. "/main.lua"))()
+--====================================================================================================================--
+--[ UI SETUP ]
+--====================================================================================================================--
 
-local Window = WindUI:CreateWindow({
-    Title = "Nadir Hub │ " .. GameName,
-    Folder = "Nadir Hub"
-    Icon = "circle-user-round",
-    Author = PlayerName,
-    Size = UDim2.fromOffset(100, 100),
-    Transparent = false,
-    Theme = "Dark",
-    SideBarWidth = 150,
-})
+local Window =
+    WindUI:CreateWindow(
+    {
+        Title = "Nadir Hub",
+        Icon = "circle-user-round",
+        Author = GameName,
+        Folder = "Nadir Hub",
+        Size = UDim2.fromOffset(100, 100),
+        SideBarWidth = 150,
+        Theme = "Dark",
+        HideSearchBar = true
+    }
+)
 
-local MainTab = Window:Tab({ Title = "Main", Icon = "house" })
+--// Deklarasi Tab-Tab
+local MainTab = Window:Tab({Title = "Auto Player", Icon = "play"})
+local MiscTab = Window:Tab({Title = "Misc", Icon = "layout-grid"})
+local CreditsTab = Window:Tab({Title = "Credits", Icon = "users"})
+
 Window:SelectTab(1)
-local CreditsTab = Window:Tab({ Title = "Credits", Icon = "user-pen" })
 
-CreditsTab:Button({
-    Title = "Discord Server",
-    Desc = "Link invite Nadir Hub",
-    Callback = function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/Nadir3709/Credits/main/Discord"))()
-    end,
-})
-
-CreditsTab:Paragraph({
-    Title = "Author",
-    Desc = "Nadir & Nioxsantana",
-})
+--====================================================================================================================--
+--[ FUNGSI & LOGIKA AUTO PLAYER ]
+--====================================================================================================================--
 
 _G.auto = false
-_G.Delay = 0.005
-_G.Mode = "Static"
+_G.Delay = 0
+_G.ToggledBeforeMenuOpen = false
+_G.AntiAFK = true
 
-local Side
-local holding = {}
+local isCurrentlyPlaying = false
+local Side = nil
+local keymap = {key1, key2, key3, key4, key5, key6, key7, key8, key9}
 
-local function CheckSide()
-    pcall(function()
-        local rootPart = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-        local minDistToLeft, minDistToRight = math.huge, math.huge
-
-        for _, stage in pairs(workspace.Map.Stages:GetChildren()) do
-            if stage:FindFirstChild("Teams") then
-                local left = stage.Teams:FindFirstChild("Left")
-                local right = stage.Teams:FindFirstChild("Right")
-
-                if left then
-                    local dist = (rootPart.Position - left.Position).Magnitude
-                    if dist < minDistToLeft then minDistToLeft = dist end
-                end
-
-                if right then
-                    local dist = (rootPart.Position - right.Position).Magnitude
-                    if dist < minDistToRight then minDistToRight = dist end
-                end
-            end
+function IsPlayerInSong()
+    local gameWindow = LocalPlayer.PlayerGui:FindFirstChild("Window")
+    if gameWindow and gameWindow:FindFirstChild("Game") and gameWindow.Game.Visible then
+        if gameWindow.Game:FindFirstChild("Fields") and Side and LocalPlayer.PlayerGui.Window.Game.Fields[Side] then
+            return true
         end
-
-        Side = minDistToLeft < minDistToRight and "Left" or "Right"
-    end)
+    end
+    return false
 end
 
-MainTab:Toggle({
-    Title = "Auto Player",
-    Default = false,
-    Callback = function(state)
-        _G.auto = state
-        if state then
-            while _G.auto do
-                pcall(function()
-                    local ap = player.PlayerGui.Window.Game.Fields[Side].Inner
-                    local columns = {
-                        ap.Lane1.Notes:GetChildren(),
-                        ap.Lane2.Notes:GetChildren(),
-                        ap.Lane3.Notes:GetChildren(),
-                        ap.Lane4.Notes:GetChildren(),
-                        (ap:FindFirstChild("Lane5") and ap.Lane5.Notes:GetChildren()) or {},
-                        (ap:FindFirstChild("Lane6") and ap.Lane6.Notes:GetChildren()) or {},
-                        (ap:FindFirstChild("Lane7") and ap.Lane7.Notes:GetChildren()) or {},
-                        (ap:FindFirstChild("Lane8") and ap.Lane8.Notes:GetChildren()) or {},
-                        (ap:FindFirstChild("Lane9") and ap.Lane9.Notes:GetChildren()) or {},
-                    }
-
-                    local keys = {key1, key2, key3, key4, key5, key6, key7, key8, key9}
-
-                    for i, notes in ipairs(columns) do
-                        local key = keys[i]
-                        if key and not holding[key] then
-                            for _, note in ipairs(notes) do
-                                if note:IsA("Frame") and note.Visible and note.Position.Y.Scale > (0.2 + _G.Delay) then
-                                    coroutine.wrap(function()
-                                        local tail = note:FindFirstChildWhichIsA("Frame")
-                                        holding[key] = true
-                                        VirtualInputManager:SendKeyEvent(true, key, false, game)
-
-                                        if tail then
-                                            local startY = tail.AbsolutePosition.Y
-                                            local earlyReleaseDistance = 50
-                                            local waitUntil = startY - earlyReleaseDistance
-
-                                            while _G.auto and note:IsDescendantOf(game) do
-                                                if not tail:IsDescendantOf(game) then break end
-                                                if tail.AbsolutePosition.Y < waitUntil then break end
-                                                task.wait()
-                                            end
-                                        else
-                                            task.wait(0.04)
-                                        end
-
-                                        VirtualInputManager:SendKeyEvent(false, key, false, game)
-                                        holding[key] = false
-                                    end)()
-                                    break
-                                end
-                            end
+function CheckSide()
+    pcall(
+        function()
+            local character = LocalPlayer.Character
+            local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+            if not rootPart then
+                return
+            end
+            local minDistToLeft, minDistToRight = math.huge, math.huge
+            for _, stage in pairs(workspace.Map.Stages:GetChildren()) do
+                if stage:FindFirstChild("Teams") then
+                    local left = stage.Teams:FindFirstChild("Left")
+                    local right = stage.Teams:FindFirstChild("Right")
+                    if left then
+                        local dist = (rootPart.Position - left.Position).Magnitude
+                        if dist < minDistToLeft then
+                            minDistToLeft = dist
                         end
                     end
-                end)
-                task.wait()
+                    if right then
+                        local dist = (rootPart.Position - right.Position).Magnitude
+                        if dist < minDistToRight then
+                            minDistToRight = dist
+                        end
+                    end
+                end
+            end
+            Side = minDistToLeft < minDistToRight and "Left" or "Right"
+        end
+    )
+end
+
+local function setupColumns(side)
+    local columns = {}
+    pcall(
+        function()
+            local ap = LocalPlayer.PlayerGui.Window.Game.Fields[side].Inner
+            for i = 1, 9 do
+                pcall(
+                    function()
+                        if ap and ap["Lane" .. i] then
+                            columns[i] = ap["Lane" .. i].Notes
+                        end
+                    end
+                )
+            end
+        end
+    )
+    return columns
+end
+
+local function autoplay()
+    while _G.auto and isCurrentlyPlaying do
+        pcall(
+            function()
+                local columns = setupColumns(Side)
+                local trackedChildren = {}
+                local activationThreshold = 0.4 + 1e-9 + _G.Delay
+                for columnNum, column in pairs(columns) do
+                    pcall(
+                        function()
+                            trackedChildren[columnNum] = {}
+                            for _, child in ipairs(column:GetChildren()) do
+                                pcall(
+                                    function()
+                                        if child:IsA("GuiObject") and child.Position.Y.Scale > activationThreshold then
+                                            trackedChildren[columnNum][child] = true
+                                            VirtualInputManager:SendKeyEvent(true, keymap[columnNum], false, game)
+                                        end
+                                    end
+                                )
+                            end
+                        end
+                    )
+                end
+                while _G.auto and isCurrentlyPlaying do
+                    pcall(
+                        function()
+                            for columnNum, column in pairs(columns) do
+                                pcall(
+                                    function()
+                                        for _, child in ipairs(column:GetChildren()) do
+                                            pcall(
+                                                function()
+                                                    if
+                                                        child:IsA("GuiObject") and not trackedChildren[columnNum][child] and
+                                                            child.Position.Y.Scale > activationThreshold
+                                                     then
+                                                        trackedChildren[columnNum][child] = true
+                                                        VirtualInputManager:SendKeyEvent(
+                                                            true,
+                                                            keymap[columnNum],
+                                                            false,
+                                                            game
+                                                        )
+                                                        if #child:GetChildren() == 2 then
+                                                            coroutine.wrap(
+                                                                function()
+                                                                    pcall(
+                                                                        function()
+                                                                            while child.Parent and
+                                                                                child.Position.Y.Scale >
+                                                                                    activationThreshold and
+                                                                                _G.auto and
+                                                                                isCurrentlyPlaying do
+                                                                                RunService.Heartbeat:Wait()
+                                                                            end
+                                                                            VirtualInputManager:SendKeyEvent(
+                                                                                false,
+                                                                                keymap[columnNum],
+                                                                                false,
+                                                                                game
+                                                                            )
+                                                                            trackedChildren[columnNum][child] = nil
+                                                                        end
+                                                                    )
+                                                                end
+                                                            )()
+                                                        end
+                                                    end
+                                                end
+                                            )
+                                        end
+                                        for child in pairs(trackedChildren[columnNum]) do
+                                            pcall(
+                                                function()
+                                                    if
+                                                        not child:IsDescendantOf(column) or
+                                                            (child:IsA("GuiObject") and
+                                                                child.Position.Y.Scale <= activationThreshold)
+                                                     then
+                                                        if trackedChildren[columnNum][child] then
+                                                            VirtualInputManager:SendKeyEvent(
+                                                                false,
+                                                                keymap[columnNum],
+                                                                false,
+                                                                game
+                                                            )
+                                                        end
+                                                        trackedChildren[columnNum][child] = nil
+                                                    end
+                                                end
+                                            )
+                                        end
+                                    end
+                                )
+                            end
+                            RunService.Heartbeat:Wait()
+                        end
+                    )
+                end
+            end
+        )
+    end
+end
+
+--====================================================================================================================--
+--[ CONTENT TAB UI ]
+--====================================================================================================================--
+
+-----------------------
+-- TAB AUTO PLAYER --
+-----------------------
+MainTab:Section({Title = "Main Control"})
+MainTab:Toggle(
+    {
+        Title = "Enable Auto Player",
+        Desc = "Activates automatically when a song starts.",
+        Default = false,
+        Callback = function(state)
+            _G.auto = state
+            if state then
+                if not IsPlayerInSong() then
+                    WindUI:Notify({Title = "Auto Player", Content = "Waiting for a song to start..."})
+                end
+            else
+                isCurrentlyPlaying = false
+                print("Auto Player fully disabled.")
+            end
+        end
+    }
+)
+MainTab:Paragraph(
+    {
+        Title = "FYI (For Your Information)",
+        Desc = "The script may not get 100% sick on certain songs."
+    }
+)
+
+-----------------
+-- TAB MISC --
+-----------------
+MiscTab:Section({Title = "Server Actions"})
+MiscTab:Button(
+    {Title = "Rejoin", Desc = "Rejoins the current server.", Callback = function()
+            TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId)
+        end}
+)
+MiscTab:Button(
+    {
+        Title = "Server Hop",
+        Desc = "Finds and joins a different server.",
+        Callback = function()
+            local servers =
+                HttpService:JSONDecode(
+                game:HttpGet(
+                    "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"
+                )
+            )
+            for _, server in ipairs(servers.data) do
+                if server.playing < server.maxPlayers and server.id ~= game.JobId then
+                    TeleportService:TeleportToPlaceInstance(game.PlaceId, server.id)
+                    return
+                end
+            end
+            WindUI:Notify({Title = "Server Hop", Content = "No other servers found."})
+        end
+    }
+)
+MiscTab:Section({Title = "Client Tweaks"})
+MiscTab:Button(
+    {Title = "Run Infinite Yield", Desc = "Executes the Infinite Yield admin script.", Callback = function()
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source"))()
+        end}
+)
+
+--------------------
+-- TAB CREDITS --
+--------------------
+CreditsTab:Section({Title = "Development"})
+CreditsTab:Paragraph({Title = "Author", Desc = "- Nadir"})
+CreditsTab:Paragraph({Title = "UI Library", Desc = "- Wind UI by Footagesus"})
+CreditsTab:Paragraph({Title = "Hub", Desc = "- Nadir Hub"})
+CreditsTab:Section({Title = "Community"})
+CreditsTab:Button(
+    {
+        Title = "Discord Server",
+        Desc = "Copies Discord Invite Link to clipboard.",
+        Callback = function()
+            if setclipboard then
+                setclipboard("https://discord.gg/Nvhb3EnMDX")
+                WindUI:Notify({Title = "Credits", Content = "Copied successfully!", Duration = 3})
+            else
+                WindUI:Notify(
+                    {Title = "Credits", Content = "Your executor does not support setclipboard.", Duration = 5}
+                )
+            end
+        end
+    }
+)
+
+--====================================================================================================================--
+--[ LOOP BACKGROUND & EVENTS ]
+--====================================================================================================================--
+
+GuiService.MenuOpened:Connect(
+    function()
+        if _G.auto then
+            _G.ToggledBeforeMenuOpen = true
+            WindUI:Notify({Title = "Auto Player", Content = "Paused while menu is open.", Duration = 0})
+        end
+    end
+)
+GuiService.MenuClosed:Connect(
+    function()
+        if _G.ToggledBeforeMenuOpen then
+            _G.ToggledBeforeMenuOpen = false
+        end
+    end
+)
+
+task.spawn(
+    function()
+        while task.wait(0.25) do
+            if _G.AntiAFK then
+                pcall(
+                    function()
+                        VirtualUser:CaptureController()
+                        VirtualUser:ClickButton2(Vector2.new())
+                    end
+                )
+            end
+            if
+                LocalPlayer.PlayerGui:FindFirstChild("GameGui") and
+                    LocalPlayer.PlayerGui.GameGui.Windows.SongSelector.Visible == true
+             then
+                CheckSide()
+            end
+            pcall(
+                function()
+                    if Side then
+                        local keymap_path = LocalPlayer.PlayerGui.Window.Game.Fields[Side].Inner
+                        for i = 1, 9 do
+                            keymap[i] =
+                                keymap_path:FindFirstChild("Lane" .. i) and
+                                Enum.KeyCode[keymap_path["Lane" .. i].Labels.Label.Text.text] or
+                                nil
+                        end
+                    end
+                end
+            )
+        end
+    end
+)
+
+task.spawn(
+    function()
+        while task.wait(0.5) do
+            if _G.auto and not isCurrentlyPlaying and IsPlayerInSong() and not _G.ToggledBeforeMenuOpen then
+                isCurrentlyPlaying = true
+                WindUI:Notify({Title = "Auto Player", Content = "Song detected! Activating..."})
+                coroutine.wrap(autoplay)()
+            elseif isCurrentlyPlaying and not IsPlayerInSong() then
+                isCurrentlyPlaying = false
             end
         end
     end
-})
+)
 
-local Paragraph = MainTab:Paragraph({
-    Title = "Auto Player Update.",
-    Desc = "Maybe there are still some bugs for auto player in other songs / long notes arrow, I will improve it later.",
-})
-
-spawn(function()
-    while task.wait() do
-        if player.PlayerGui.GameGui.Windows.SongSelector.Visible then
-            CheckSide()
-        end
-        pcall(function()
-            local keymap = player.PlayerGui.Window.Game.Fields[Side].Inner
-            key1 = Enum.KeyCode[keymap.Lane1.Labels.Label.Text.text]
-            key2 = Enum.KeyCode[keymap.Lane2.Labels.Label.Text.text]
-            key3 = Enum.KeyCode[keymap.Lane3.Labels.Label.Text.text]
-            key4 = Enum.KeyCode[keymap.Lane4.Labels.Label.Text.text]
-            key5 = Enum.KeyCode[keymap.Lane5.Labels.Label.Text.text]
-            key6 = Enum.KeyCode[keymap.Lane6.Labels.Label.Text.text]
-            key7 = Enum.KeyCode[keymap.Lane7.Labels.Label.Text.text]
-            key8 = Enum.KeyCode[keymap.Lane8.Labels.Label.Text.text]
-            key9 = Enum.KeyCode[keymap.Lane9.Labels.Label.Text.text]
-        end)
-    end
-end)
+WindUI:Notify({Title = "Nadir Hub", Content = "Anti-AFK automatically activated.", Duration = 4})
