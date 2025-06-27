@@ -24,10 +24,10 @@ local GameName = game:GetService("MarketplaceService"):GetProductInfo(game.Place
 local Window =
     WindUI:CreateWindow(
     {
-        Title = "Nadir Hub",
-        Icon = "circle-user-round",
+        Title = "Skedz Hub",
+        Icon = "worm",
         Author = GameName,
-        Folder = "Nadir Hub",
+        Folder = "Skedz Hub",
         Size = UDim2.fromOffset(100, 100),
         SideBarWidth = 150,
         Theme = "Dark",
@@ -295,9 +295,9 @@ MiscTab:Button(
 -- TAB CREDITS --
 --------------------
 CreditsTab:Section({Title = "Development"})
-CreditsTab:Paragraph({Title = "Author", Desc = "- Nadir"})
+CreditsTab:Paragraph({Title = "Author", Desc = "- Aleoa"})
 CreditsTab:Paragraph({Title = "UI Library", Desc = "- Wind UI by Footagesus"})
-CreditsTab:Paragraph({Title = "Hub", Desc = "- Nadir Hub"})
+CreditsTab:Paragraph({Title = "Hub", Desc = "- Skedz Hub"})
 CreditsTab:Section({Title = "Community"})
 CreditsTab:Button(
     {
