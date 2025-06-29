@@ -28,7 +28,7 @@ local Window =
         Icon = "worm",
         Author = GameName,
         Folder = "Skedz Hub",
-        Size = UDim2.fromOffset(100, 100),
+        Size = UDim2.fromOffset(580, 100),
         SideBarWidth = 150,
         Theme = "Dark",
         HideSearchBar = true
@@ -250,7 +250,7 @@ MainTab:Toggle(
 MainTab:Paragraph(
     {
         Title = "FYI (For Your Information)",
-        Desc = "The script may not get 100% sick on certain songs."
+        Desc = "The script may not get 100% sick on certain songs.\n And please use downscroll for Auto Player."
     }
 )
 
@@ -295,7 +295,7 @@ MiscTab:Button(
 -- TAB CREDITS --
 --------------------
 CreditsTab:Section({Title = "Development"})
-CreditsTab:Paragraph({Title = "Author", Desc = "- Aleoa"})
+CreditsTab:Paragraph({Title = "Author", Desc = "- Nadir"})
 CreditsTab:Paragraph({Title = "UI Library", Desc = "- Wind UI by Footagesus"})
 CreditsTab:Paragraph({Title = "Hub", Desc = "- Skedz Hub"})
 CreditsTab:Section({Title = "Community"})
@@ -384,4 +384,4 @@ task.spawn(
     end
 )
 
-WindUI:Notify({Title = "Nadir Hub", Content = "Anti-AFK automatically activated.", Duration = 4})
+WindUI:Notify({Title = "Skedz Hub", Content = "Anti-AFK automatically activated.", Duration = 4})
